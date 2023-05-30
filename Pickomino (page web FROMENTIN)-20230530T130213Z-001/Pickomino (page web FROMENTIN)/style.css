@@ -1,0 +1,56 @@
+body
+{
+    background-color:#047fc2;
+    color: gold;
+    background-attachment: fixed;
+    font-family: 'mv_boliregular';
+    font-size: 35px;
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'mv_boliregular';
+    src: url('font/mvboli-webfont.woff2') format('woff2'),
+         url('font/mvboli-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+#pickomino{
+    text-align: center;
+}
+
+.main_div{
+    display: inline-block;
+}
+
+.pickomino{
+    color:saddlebrown;
+    font-weight:bold;
+    background-color: antiquewhite;
+    margin-left: 10px;
+    font-size: 20px;
+    width:50px;
+    height:80px;
+    border-radius: 7px;
+    box-shadow: 5px 5px 5px rgba(66, 66, 66, 0.651);
+
+}
+.brochette{
+    margin:20px;
+    display: flex;
+}
+
+input
+{
+    font-size:30px;
+}
+
+.info_joueur{
+    display: flex;
+}
+
+.zone_lancer{
+    height: 100px;
+}

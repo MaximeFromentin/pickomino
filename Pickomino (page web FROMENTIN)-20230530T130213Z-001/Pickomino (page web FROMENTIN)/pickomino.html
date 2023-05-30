@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickomino</title>
+    <link rel="shortcut icon" href="./images/favicon.png" type="image/png">
+    <link href="style.css" rel="stylesheet" type="text/css">
+</head>
+
+<body>
+
+    <img src="./images/titre.jpg">
+    <!--  L'élément suivant va être repéré par VueJs, qui va manipuler son contenu -->
+    <div id="pickomino">
+        <!-- Cette partie ne s'affichera que si la propriété 'etat' vaut 'preparation' -->
+        <div v-if="etat=='preparation'" class="main_div">
+            Joueurs:<br>
+            <!-- On affiche les champs de saisie des joueur (un champ de saisie par joueur) -->
+            <!-- Pour cela, VueJs va boucler sur le tableau, et répéter cette div autant de fois -->
+            <div v-for="(joueur,index) in joueurs" :key="index">
+                <!-- La valeur de ce champ de saisie est liée à la propriété 'nom' du joueur -->
+                <input v-model="joueur.nom">
+            </div>
+            <!-- En cliquant sur ce bouton, on déclenche l'appel à la méthode (ou fonction) 'go()' que contient notre objet VueJs -->
+            <button @click="go">C'est parti!</button>
+        </div>
+
+        <!-- Cette partie ne s'affichera que si la propriété 'etat' vaut 'en cours' -->
+        <div v-if="etat=='en cours'" class="main_div">
+            <!-- Ici on va afficher la liste des joueurs, ainsi que les pickominos qu'ils possèdent -->
+            <div>
+                <!-- VueJs va répéter cette div autant de fois qu'il y a de joueurs -->
+                <div v-for="joueur in joueurs">
+                    <!-- Si le joueur a des pickominos, on va afficher le nombre, et la valeur du premier de la liste -->
+                    <div v-if="joueur.pickominos.length>0" class="brochette">
+                        {{joueur.nom}}:
+                        <div class="pickomino">
+                            <div class="valeur">
+                                {{joueur.pickominos[0].valeur}}
+                            </div>
+                            <div>
+                                <img :src="'./images/ver'+joueur.pickominos[0].vers+'.png'" width="35">
+                            </div>
+                        </div>
+                        <div v-for="index in joueur.pickominos.length-1" class="pickomino"></div>
+                    </div>
+                    <!-- sinon on affiche simplement le message suivant -->
+                    <div v-else class="brochette">
+                        {{joueur.nom}}: n'a pas de pickomino.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ici on va afficher la liste des pickominos de la brochette -->
+            <div class="brochette">
+                <!-- On va boucler sur la liste 'brochette' -->
+                <div v-for="pickomino in brochette" class="pickomino">
+                    <!-- Si le pickomino est libre, on affiche sa valeur ainsi que le nombre de vers qu'il possède -->
+                    <div v-if="pickomino.etat=='libre'" class="valeur">
+                        {{pickomino.valeur}}
+                    </div>
+                    <div v-if="pickomino.etat=='libre'">
+                        <img :src="'./images/ver'+pickomino.vers+'.png'" width="35">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ici on va afficher le nom du joueur en cours -->
+            <div>Joueur en cours: {{joueurs[joueur_courant].nom}}</div>
+
+            <!-- Ici on va afficher les dés gardés -->
+            <div> Dés mis de côté:
+                <!-- On va boucler sur la liste de dés gardés, et afficher l'image qui correspond à chaque dé -->
+                <img v-for="de in garde" width="40" :src="'./images/'+de+'.png'">
+            </div>
+            <!-- Ici on affiche le score total des dés gardés -->
+            <div>Score: {{total_garde}}</div>
+            <!-- Ici on affiche les dés lancés -->
+            <div class="zone_lancer">
+                <!-- On va boucler sur la liste de dés lancés, et afficher l'image qui correspond à chaque dé -->
+                <img v-for="de in lance" :src="'./images/'+de+'.png'">
+            </div>
+
+            <!-- Si on est à la phase 'lancer', on affiche le bouton pour déclencher la fonction 'lance_des' -->
+            <div v-if="phase_tour=='lancer'">
+                <button @click="lancer_des">Lancer les dés</button>
+            </div>
+
+            <!-- Si on est à la phase 'garder'... -->
+            <div v-if="phase_tour=='garder'">
+                <!-- ... on affiche les boutons qui permettent de mettre de côté les dés qu'il est possible de garder-->
+                <!-- On boucle donc sur la liste 'garde_possible'-->
+                Garder: <button v-for="valeur in garde_possible"
+                    @click="garder(valeur)">{{valeur==6?'ver':valeur}}</button>
+            </div>
+            <!-- Si on est à la phase 'continuer?' ... -->
+            <div v-if="phase_tour=='continuer?'">
+                <!-- S'il reste des dés à lancer, on va demander au joueur s'il veut continuer à lancer les dés -->
+                <div v-if="garde.length<nombre_des">
+                    Que souhaitez-vous faire? <button @click="lancer_des">Continuer</button>
+                </div>
+                <!-- Ou on va lui proposer de récupérer un pickomino (si possible) -->
+                <div v-if="pickomino_recuperable">
+                    <div>Vous pouvez prendre le pickomino {{pickomino_recuperable.valeur}}.</div>
+                    <div v-if="pickomino_recuperable.emplacement=='brochette'">Il se trouve sur la
+                        brochette.</div>
+                    <div v-else>Il se trouve chez {{joueurs[pickomino_recuperable.joueur].nom}}.</div>
+                    <button @click="prendre_pickomino()">Prendre ce pickomino</button>
+                </div>
+            </div>
+            <!-- Si le joueur ne peut plus garder de dés, il doit en rendre un -->
+            <div v-if="phase_tour=='perdu'">
+                <div>Vous ne pouvez plus mettre des dés de côté.</div>
+                <div v-if="joueurs[joueur_courant].pickominos.length>0">
+                    vous devez rendre un pickomino :( <button @click="rendre">Rendre
+                        mon pickomino</button>
+                </div>
+                <div v-else>
+                    <button @click="joueur_suivant">Passer</button>
+                </div>
+            </div>
+        </div>
+        <div v-if="etat=='fin'" class="main_div">
+            La partie est finie!
+            Voici les scores:
+            <div v-for="joueur in joueurs">{{joueur.nom}} a obtenu {{joueur.score}} vers.</div>
+            <br>
+            Le gagnant est {{vainqueur().nom}}! Bravo!
+            <br>
+            <br>
+            <br>
+            <br>
+            Appuyez sur la touche F5 pour rejouer!
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="./pickomino.js"></script>
+</body>
+
+</html>
